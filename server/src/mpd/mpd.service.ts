@@ -1,132 +1,80 @@
 import { Injectable } from '@nestjs/common';
-const mpd = require('mpd'),
-  cmd = mpd.cmd;
+import { Observable } from 'rxjs';
+import { PlayerState } from 'src/models/player-state';
+import { MpdServiceListener } from './mpd.listener';
+// tslint:disable-next-line: no-var-requires
+const mpd = require('mpd');
+const cmd = mpd.cmd;
+const parseKeyValueMessage = mpd.parseKeyValueMessage;
 
 @Injectable()
 export class MpdService {
-  private readonly client: any;
+  private readonly mpdClient: any;
+  private listeners: MpdServiceListener[] = [];
 
   constructor() {
-    this.client = mpd.connect({
+    this.mpdClient = mpd.connect({
       port: 6600,
       host: 'localhost',
     });
 
-    this.client.on('ready', () => {
-      console.log('ready\n');
-
-      // client.sendCommand("listallinfo", (err, msg) => {
-      //   var files = getFiles(msg);
-      //   var filesGroupedByAlbum = groupFilesByAlbum(files);
-      //   var albums = getAlbumsFromFilesGroupedByAlbum(filesGroupedByAlbum);
-
-      //   var orderedAlbums = orderAlbumsByDateAndAlbumArtist(albums);
-      //   console.log(orderedAlbums);
-      // });
-
-      this.clear();
-
-      this.client.sendCommand(
-        cmd('findadd', [
-          'Album',
-          'A Curious Thing',
-          'AlbumArtist',
-          'Amy Macdonald',
-        ]),
-        (err, msg) => {
-          const files = this.getFiles(msg);
-          this.client.sendCommand(cmd('play', [0]));
-        },
-      );
+    this.mpdClient.on('ready', () => {
+      console.log('ready');
     });
 
-    this.client.on('system', name => {
+    this.mpdClient.on('system', (name: string) => {
       console.log('system', name);
 
-      this.listData();
-    });
-
-    this.client.on('system-player', () => {
-      console.log('system-player');
-      // client.sendCommand(cmd("status", []), function(err, msg) {
-      //   if (err) throw err;
-      //   console.log(msg);
-      // });
-    });
-  }
-
-  lsinfo() {
-    this.client.sendCommand(
-      'lsinfo',
-      ['album', 'group', 'albumartist'],
-      (err, msg) => {
-        console.log();
-      },
-    );
-  }
-
-  clear() {
-    this.client.sendCommand('clear');
-  }
-
-  play() {
-    this.client.sendCommand(cmd('pause', [0]));
-  }
-
-  pause() {
-    this.client.sendCommand(cmd('pause', [1]));
-  }
-
-  stop() {
-    this.client.sendCommand('stop');
-  }
-
-  listAlbums() {
-    this.client.sendCommand(
-      cmd('list', ['album', 'group', 'albumartist']),
-      (err, msg) => {
+      this.mpdClient.sendCommand('status', (err, msg) => {
         if (err) {
           throw err;
         }
 
-        const albums = this.parseAlbums(msg);
-        console.log(albums);
-      },
-    );
+        const playerState: PlayerState = parseKeyValueMessage(msg);
+        console.log(playerState);
+
+        this.listeners.forEach(listener => {
+          listener.onPlayerState(playerState);
+        });
+      });
+    });
+
+    this.mpdClient.on('system-player', () => {});
   }
 
-  parseAlbums(msg) {
-    const lines = msg.split('\n');
-
-    const albums = [];
-
-    let currentAlbum = {};
-
-    for (const line of lines) {
-      const texts = line.split(':');
-      const key = texts[0];
-      const value = line.substr(key.length + 2);
-
-      if (key === 'AlbumArtist') {
-        currentAlbum = {};
-        albums.push(currentAlbum);
-      }
-
-      currentAlbum[key] = value;
-    }
-
-    return albums;
+  registerListener(listener: MpdServiceListener) {
+    this.listeners.push(listener);
   }
 
-  listData() {
-    this.client.sendCommand(cmd('find', ['Genre', 'Pop']), (err, msg) => {
-      if (err) {
-        throw err;
-      }
+  clear() {
+    this.mpdClient.sendCommand('clear');
+  }
 
-      const albums = this.getAlbums(msg);
+  play() {
+    this.mpdClient.sendCommand(cmd('pause', [0]));
+  }
 
-      console.log(albums);
+  pause() {
+    this.mpdClient.sendCommand(cmd('pause', [1]));
+  }
+
+  stop() {
+    this.mpdClient.sendCommand('stop');
+  }
+
+  getAlbums(): Observable<any> {
+    return new Observable(subscriber => {
+      this.mpdClient.sendCommand('listallinfo', (err: any, msg: any) => {
+        const files = this.getFiles(msg);
+        const filesGroupedByAlbum = this.groupFilesByAlbum(files);
+        const albums = this.getAlbumsFromFilesGroupedByAlbum(
+          filesGroupedByAlbum,
+        );
+        const orderedAlbums = this.orderAlbumsByDateAndAlbumArtist(albums);
+
+        subscriber.next(orderedAlbums);
+        subscriber.complete();
+      });
     });
   }
 
@@ -141,11 +89,11 @@ export class MpdService {
       const key = texts[0];
       const value = line.substr(key.length + 2);
 
-      if (key == '') {
+      if (key === '') {
         continue;
       }
 
-      if (key == 'file') {
+      if (key === 'file') {
         currentFile = {};
         files.push(currentFile);
       }
@@ -196,32 +144,7 @@ export class MpdService {
     return albums.sort(this.compareAlbums);
   }
 
-  getAlbums(msg) {
-    const files = this.getFiles(msg);
-    const filesGroupedByAlbum = this.groupFilesByAlbum(files);
-
-    // var filesGroupedByGenre = files.reduce(function(prev, cur) {
-    //   let key = cur["Genre"];
-
-    //   (prev[key] ? prev[key] : (prev[key] = null || [])).push(cur);
-
-    //   return prev;
-    // }, {});
-
-    // var genres = Object.keys(filesGroupedByAlbum)
-    //   .map(key => {
-    //     var albumFiles = filesGroupedByAlbum[key];
-
-    //     return albumFiles[0]["Genre"];
-    //   })
-    //   .sort();
-
-    const albums = this.getAlbumsFromFilesGroupedByAlbum(filesGroupedByAlbum);
-
-    return this.orderAlbumsByDateAndAlbumArtist(albums);
-  }
-
-  compareAlbums(a, b) {
+  compareAlbums(a: any, b: any) {
     const dateA = a.date || 0;
     const dateB = b.date || 0;
 
