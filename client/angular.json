@@ -122,5 +122,13 @@
       }
     }
   },
-  "defaultProject": "client"
+  "defaultProject": "client",
+  "schematics": {
+    "@schematics/angular": {
+      "component": {
+        "spec": false
+      }
+    },
+    "@schematics/angular:service": { "spec": false }
+  }
 }

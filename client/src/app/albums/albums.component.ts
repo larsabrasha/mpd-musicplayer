@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { Select, Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { GetAlbums, PlayAlbum } from '../store/app.actions';
-import { AlbumModel, IAppState } from '../store/app.model';
+import { Album, IAppState } from '../store/app.model';
 
 @Component({
   selector: 'app-albums',
@@ -12,7 +12,7 @@ import { AlbumModel, IAppState } from '../store/app.model';
 })
 export class AlbumsComponent implements OnInit {
   @Select((state: IAppState) => state.app.albums)
-  albums$: Observable<AlbumModel[]>;
+  albums$: Observable<Album[]>;
 
   constructor(private store: Store) {
     this.store.dispatch(new GetAlbums());
@@ -20,7 +20,7 @@ export class AlbumsComponent implements OnInit {
 
   ngOnInit() {}
 
-  playAlbum(album: AlbumModel) {
-    this.store.dispatch(new PlayAlbum({ service: 'mpd', uri: album.uri }));
+  playAlbum(album: Album) {
+    this.store.dispatch(new PlayAlbum(album.uri));
   }
 }

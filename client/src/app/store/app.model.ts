@@ -1,12 +1,14 @@
-export interface AlbumModel {
-  title: string;
-  albumart: string;
+export class Album {
+  uri: string;
   name: string;
   artist: string;
-  uri: string;
+  year: number;
+  genre: string;
+  duration: number;
+  albumart: string;
 }
 
-export interface GenreModel {
+export interface Genre {
   title: string;
   uri: string;
 }
@@ -46,9 +48,10 @@ export interface PlayerState {
 }
 
 export interface AppStateModel {
-  albums: AlbumModel[];
-  genres: GenreModel[];
-  genreAlbums: AlbumModel[];
+  isConnectedToServer: boolean;
+  albums: Album[];
+  genres: Genre[];
+  genreAlbums: Album[];
   queue: QueueItem[];
   playerState: PlayerState;
 }
@@ -59,6 +62,7 @@ export interface IAppState {
 
 export const defaults: IAppState = {
   app: {
+    isConnectedToServer: false,
     albums: [],
     genres: [],
     genreAlbums: [],

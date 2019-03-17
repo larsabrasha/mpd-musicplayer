@@ -53,8 +53,8 @@ export class EventsGateway implements MpdServiceListener {
   }
 
   @SubscribeMessage('getAlbums')
-  getAlbums(client, data: any): Observable<any> {
-    console.log(data);
+  getAlbums(client: any, data: any): Observable<any> {
+    console.log('getAlbums');
     return this.mpdService.getAlbums().pipe(
       map(x => ({
         event: '[Server] Albums',
@@ -63,8 +63,20 @@ export class EventsGateway implements MpdServiceListener {
     );
   }
 
-  @SubscribeMessage('playAlbum')
-  playAlbum(client, data: any): string {
+  @SubscribeMessage('getGenres')
+  getGenres(client: any, data: any): Observable<any> {
+    console.log('getGenres');
+    return this.mpdService.getGenres().pipe(
+      map(x => ({
+        event: '[Server] Genres',
+        data: x,
+      })),
+    );
+  }
+
+  @SubscribeMessage('playUri')
+  playUri(client: any, data: any): string {
+    this.mpdService.playUri(data);
     console.log(data);
     return '';
   }

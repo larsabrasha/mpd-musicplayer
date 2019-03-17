@@ -2,8 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Select, Store } from '@ngxs/store';
 import { ConnectWebSocket } from '@ngxs/websocket-plugin';
 import { Observable } from 'rxjs';
-import { Album } from './store/albums/albums.model';
-import { IAppState, PlayerState } from './store/app.model';
+import { Album, IAppState, PlayerState } from './store/app.model';
 
 @Component({
   selector: 'app-root',
@@ -14,16 +13,16 @@ export class AppComponent implements OnInit {
   title = 'client';
 
   @Select((state: IAppState) => state.app.albums)
-  albums$: Observable<Album>;
+  albums$: Observable<Album[]>;
 
   @Select((state: IAppState) => state.app.playerState)
   playerState$: Observable<PlayerState>;
 
-  constructor(private store: Store) {}
+  constructor(private store: Store) {
+    this.store.dispatch(new ConnectWebSocket());
+  }
 
   ngOnInit() {
-    this.store.dispatch(new ConnectWebSocket());
-
     // this.store.dispatch(
     //   new SendWebSocketMessage({ event: 'getAlbums', data: '' })
     // );

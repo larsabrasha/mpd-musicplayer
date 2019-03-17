@@ -3,7 +3,7 @@ import { RouterStateSnapshot } from '@angular/router';
 import { Select, Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { LoadGenre, PlayAlbum } from '../store/app.actions';
-import { AlbumModel, IAppState } from '../store/app.model';
+import { Album, IAppState } from '../store/app.model';
 
 @Component({
   selector: 'app-genre',
@@ -13,12 +13,13 @@ import { AlbumModel, IAppState } from '../store/app.model';
 })
 export class GenreComponent implements OnInit {
   @Select((state: IAppState) => state.app.genreAlbums)
-  genreAlbums$: Observable<AlbumModel[]>;
+  genreAlbums$: Observable<Album[]>;
 
   constructor(private store: Store) {
     const router: Observable<any> = this.store.select(state => state.router);
-    router.subscribe(router => {
-      const state = router.state as RouterStateSnapshot;
+
+    router.subscribe(x => {
+      const state = x.state as RouterStateSnapshot;
       const genre = state.root.firstChild.params.genre;
       console.log('state: ' + JSON.stringify(state));
 
@@ -28,8 +29,8 @@ export class GenreComponent implements OnInit {
 
   ngOnInit() {}
 
-  playAlbum(album: AlbumModel) {
+  playAlbum(album: Album) {
     console.log(album.uri);
-    this.store.dispatch(new PlayAlbum({ service: 'mpd', uri: album.uri }));
+    this.store.dispatch(new PlayAlbum(album.uri));
   }
 }

@@ -1,8 +1,13 @@
-import { PlayerState } from './app.model';
+import { Album, Genre, PlayerState } from './app.model';
 
 export class StatusWasUpdated {
   static readonly type = '[Server] Status Was Updated';
   constructor(public data: PlayerState) {}
+}
+
+export class Albums {
+  static readonly type = '[Server] Albums';
+  constructor(public data: Album[]) {}
 }
 
 export class GetPlayerState {
@@ -15,6 +20,11 @@ export class GetAlbums {
 
 export class GetGenres {
   static readonly type = 'Get Genres';
+}
+
+export class Genres {
+  static readonly type = '[Server] Genres';
+  constructor(public data: Genre[]) {}
 }
 
 export class GetQueue {
@@ -94,7 +104,7 @@ export class ClearQueue {
 
 export class PlayAlbum {
   static readonly type = 'Play Album';
-  constructor(public payload: { service: string; uri: string }) {}
+  constructor(public uri: string) {}
 }
 
 export class LoadGenre {

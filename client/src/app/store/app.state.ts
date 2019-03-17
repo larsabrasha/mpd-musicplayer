@@ -1,16 +1,11 @@
 import { Action, State, StateContext, Store } from '@ngxs/store';
-import { StatusWasUpdated } from './app.actions';
-import { AppStateModel } from './app.model';
+import { SendWebSocketMessage } from '@ngxs/websocket-plugin';
+import * as actions from './app.actions';
+import { AppStateModel, defaults } from './app.model';
 
 @State<AppStateModel>({
   name: 'app',
-  defaults: {
-    albums: [],
-    genres: [],
-    genreAlbums: [],
-    queue: [],
-    playerState: null,
-  },
+  defaults: defaults.app,
 })
 export class AppState {
   constructor(private store: Store) {}
@@ -28,15 +23,13 @@ export class AppState {
   //   this.store.dispatch(new actions.PushState(data));
   // }
 
-  @Action(StatusWasUpdated)
+  @Action(actions.StatusWasUpdated)
   statusWasUpdated(
     context: StateContext<AppStateModel>,
-    action: StatusWasUpdated
+    action: actions.StatusWasUpdated
   ) {
-    console.log(action.data);
-
     context.patchState({
-      playerState: { ...action.data },
+      playerState: action.data,
     });
   }
 
@@ -51,15 +44,29 @@ export class AppState {
   //   // this.volumioService.getPlayerState();
   // }
 
-  // @Action(actions.GetAlbums)
-  // getAlbums() {
-  //   // this.volumioService.getAlbums();
-  // }
+  @Action(actions.GetAlbums)
+  getAlbums(context: StateContext<AppStateModel>) {
+    context.dispatch(new SendWebSocketMessage({ event: 'getAlbums' }));
+  }
 
-  // @Action(actions.GetGenres)
-  // getGenres() {
-  //   // this.volumioService.getGenres();
-  // }
+  @Action(actions.Albums)
+  albums(context: StateContext<AppStateModel>, action: actions.Albums) {
+    context.patchState({
+      albums: action.data,
+    });
+  }
+
+  @Action(actions.GetGenres)
+  getGenres(context: StateContext<AppStateModel>) {
+    context.dispatch(new SendWebSocketMessage({ event: 'getGenres' }));
+  }
+
+  @Action(actions.Genres)
+  genres(context: StateContext<AppStateModel>, action: actions.Genres) {
+    context.patchState({
+      genres: action.data,
+    });
+  }
 
   // @Action(actions.GetQueue)
   // getQueue() {
@@ -227,13 +234,12 @@ export class AppState {
   //   // this.volumioService.volumeDown();
   // }
 
-  // @Action(actions.PlayAlbum)
-  // playAlbum(context: StateContext<AppStateModel>, action: actions.PlayAlbum) {
-  //   // this.volumioService.replaceAndPlay({
-  //   //   service: 'mpd',
-  //   //   uri: action.payload.uri,
-  //   // });
-  // }
+  @Action(actions.PlayAlbum)
+  playAlbum(context: StateContext<AppStateModel>, action: actions.PlayAlbum) {
+    context.dispatch(
+      new SendWebSocketMessage({ event: 'playUri', data: action.uri })
+    );
+  }
 
   // @Action(actions.PlayQueueItemAtIndex)
   // playQueueItemAtIndex(
